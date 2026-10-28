@@ -72,14 +72,16 @@ See [docs/configuration.md](docs/configuration.md) for details.
 ## How the stats work
 
 - Raw hourly results are kept for **25 hours**, which is enough for the 24h chart.
-- One summary row per day (count, sum, min, max) is kept for **31 days**.
+- One summary row per day (count, sum, min, max) is kept for **30 days**: today and the 29 previous days.
+- Anything older is deleted every hour (and at startup), even when tests fail, and the
+  database file is compacted (`VACUUM`) when a day drops out.
 - **7 days, per day**: for each of today and the 6 previous days, the exact daily average
   (sum ÷ count) plus that day's minimum and maximum. Today is still in progress.
 - **30 days**: the period is split into rolling 7-day buckets going back from today (4 full
   weeks plus a partial 2-day bucket). The table shows the average of the weekly averages,
   the lowest weekly minimum and the highest weekly maximum.
 
-The database never grows past about 60 rows. See [docs/architecture.md](docs/architecture.md).
+The database never grows past about 55 rows (a few KB on disk). See [docs/architecture.md](docs/architecture.md).
 
 ## Publishing with Cloudflare Tunnel
 

@@ -20,7 +20,7 @@
 
 Storage policy:
   - results: raw hourly results, kept for 25h (feeds the 24h chart)
-  - daily:   per-day rollups (count, sum, min, max), kept for 31 days
+  - daily:   per-day rollups (count, sum, min, max), kept for 30 days
              (feeds the 7-day and 30-day stats; avg is exact via sum/count)
 
 30-day stats = rolling 7-day buckets back from today (last bucket partial),
@@ -44,6 +44,8 @@ PORT = int(os.environ.get("PORT", "60884"))
 RUN_MINUTE = int(os.environ.get("RUN_MINUTE", "0"))
 SERVER_ID = os.environ.get("SPEEDTEST_SERVER_ID", "").strip()
 METRICS = ("down", "up", "ping")
+KEEP_DAYS = 30        # daily rollups: today + 29 previous days (exactly what the stats use)
+KEEP_RAW_HOURS = 25   # raw results: enough for the 24h chart
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
 log = logging.getLogger("lightspeed")
@@ -87,14 +89,24 @@ def record(ts, res):
         f"{m}_min=MIN({m}_min, excluded.{m}_min), "
         f"{m}_max=MAX({m}_max, excluded.{m}_max)" for m in METRICS)
     vals = [v for m in METRICS for v in (res[m],) * 3]
-    cutoff_day = (datetime.now(TZ).date() - timedelta(days=31)).isoformat()
     with lock, closing(conn()) as c, c:
         c.execute("INSERT OR REPLACE INTO results VALUES (?,?,?,?)",
                   (ts, res["down"], res["up"], res["ping"]))
         c.execute(f"INSERT INTO daily VALUES (?,1,?,?,?,?,?,?,?,?,?) "
                   f"ON CONFLICT(day) DO UPDATE SET n=n+1, {upd}", [day, *vals])
-        c.execute("DELETE FROM results WHERE ts < ?", (ts - 25 * 3600,))
-        c.execute("DELETE FROM daily WHERE day < ?", (cutoff_day,))
+
+
+def prune():
+    """Drop everything outside the retention windows, then reclaim space."""
+    oldest_day = (datetime.now(TZ).date() - timedelta(days=KEEP_DAYS - 1)).isoformat()
+    with lock, closing(conn()) as c:
+        with c:
+            r = c.execute("DELETE FROM results WHERE ts < ?", (int(time.time()) - KEEP_RAW_HOURS * 3600,)).rowcount
+            d = c.execute("DELETE FROM daily WHERE day < ?", (oldest_day,)).rowcount
+        if d:  # at most once a day: a day rolled out of the window
+            c.execute("VACUUM")
+    if r or d:
+        log.info("pruned %d raw result(s), %d day(s) older than %s", r, d, oldest_day)
 
 
 def do_test():
@@ -104,9 +116,12 @@ def do_test():
         log.info("down %.1f Mbps, up %.1f Mbps, ping %.1f ms", res["down"], res["up"], res["ping"])
     except Exception as e:
         log.error("speedtest failed: %s", e)
+    finally:
+        prune()
 
 
 def scheduler():
+    prune()
     with closing(conn()) as c:
         last = c.execute("SELECT MAX(ts) FROM results").fetchone()[0] or 0
     if time.time() - last > 55 * 60:

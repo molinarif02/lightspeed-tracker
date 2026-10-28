@@ -12,7 +12,7 @@ Everything is one Python process (`app.py`) using only the standard library:
 │        ▼                                                          │
 │  SQLite (/data/lightspeed.db)                                     │
 │    results  (raw, 25h)                                            │
-│    daily    (rollups, 31d)                                        │
+│    daily    (rollups, 30d)                                        │
 │        ▲                                                          │
 │        │                                                          │
 │  HTTP server (:60884)  / (index.html)  /api  /healthz             │
@@ -51,7 +51,7 @@ Ping is the CLI's `ping.latency`, in milliseconds.
 | `up` | REAL | Upload, in Mbps |
 | `ping` | REAL | Latency, in ms |
 
-Rows older than 25 hours are deleted on every insert.
+Rows older than 25 hours are deleted by the hourly prune.
 
 ### `daily`
 
@@ -62,7 +62,7 @@ Rows older than 25 hours are deleted on every insert.
 | `<m>_sum`, `<m>_min`, `<m>_max` | REAL | For each `m` in `down`, `up`, `ping` |
 
 Each result is upserted into its day: `n` increases by one, the value is added to the sum,
-and min and max are updated. Rows older than 31 days are deleted on every insert. Keeping
+and min and max are updated. Keeping
 the sum, rather than a stored average, makes the multi-day averages exact.
 
 ## Statistics
@@ -109,10 +109,15 @@ This keeps the definition simple. If you would rather drop it, limit the range i
 
 ## Retention summary
 
+`prune()` runs at startup and after every scheduled test, whether the test succeeded or
+failed, so old data is removed even during an outage. When a day drops out of the 30-day
+window, which happens about once a day, the database is also compacted with `VACUUM`, so
+the file stays small on disk.
+
 | Data | Kept for | Maximum rows |
 |---|---|---|
 | Raw results | 25 h | about 25 |
-| Daily rollups | 31 days | 31 |
+| Daily rollups | 30 days (today + 29 previous) | 30 |
 
 ## Security notes
 
