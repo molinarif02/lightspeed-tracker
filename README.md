@@ -9,23 +9,42 @@ and serves one page with:
   range as a shaded band for download and upload. Hover a day to see avg, min, max and the number of tests.
 - a **last 30 days** table: average, minimum and maximum computed from weekly values
 
-Built for a Raspberry Pi 5 (arm64), and also runs on x86_64. The app uses only the Python
+Built for a Raspberry Pi 5 (arm64), and also runs on x86_64 (amd64). The app uses only the Python
 standard library: no web framework, no external database, no scheduler daemon.
 
 ## Quick start
 
+A prebuilt multi-arch image is published to GitHub Container Registry by GitHub Actions on
+every push to `main` and on every version tag. It covers `linux/amd64` (x86_64) and
+`linux/arm64` (Raspberry Pi 4/5 with a 64-bit OS). Docker pulls the right one automatically.
+
 ```bash
 git clone https://github.com/molinarif02/lightspeed-tracker.git
 cd lightspeed-tracker
-docker compose up -d --build
+docker compose pull
+docker compose up -d
 ```
 
 Open `http://<host>:8080`. The first test runs right after startup, then every hour at `:00`.
 
-With Podman:
+To build the image locally instead:
 
 ```bash
-podman-compose up -d --build
+docker compose up -d --build
+```
+
+With Podman, the same commands work with `podman-compose`.
+
+### Image tags
+
+| Tag | Points to |
+|---|---|
+| `latest` | The latest build of `main` |
+| `1.2.3`, `1.2` | Release tags (`v1.2.3`) |
+| `sha-abc1234` | A specific commit |
+
+```
+ghcr.io/molinarif02/lightspeed-tracker:latest
 ```
 
 ## Configuration

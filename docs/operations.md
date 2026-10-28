@@ -5,9 +5,12 @@
 ```bash
 git clone https://github.com/molinarif02/lightspeed-tracker.git
 cd lightspeed-tracker
-docker compose up -d --build
+docker compose pull
+docker compose up -d
 docker compose logs -f
 ```
+
+To build locally instead of pulling, use `docker compose up -d --build`.
 
 A successful test logs a line like this:
 
@@ -17,12 +20,43 @@ A successful test logs a line like this:
 
 ## Update
 
+With the prebuilt image:
+
+```bash
+docker compose pull
+docker compose up -d
+```
+
+With a local build:
+
 ```bash
 git pull
 docker compose up -d --build
 ```
 
 The database lives on the `lightspeed-data` volume, so it survives rebuilds.
+
+## Releases and CI
+
+`.github/workflows/image.yml` builds `linux/amd64` (x86_64) and `linux/arm64` with Buildx (arm64
+is emulated with QEMU) and pushes the image to `ghcr.io/molinarif02/lightspeed-tracker`:
+
+- **Push to `main`**: tags `latest` and `sha-<short>`
+- **Tag `vX.Y.Z`**: tags `X.Y.Z` and `X.Y`
+- **Pull request**: builds only, no push
+- **Changes only to docs, Markdown or LICENSE**: skipped
+
+To cut a release:
+
+```bash
+git tag v1.0.0 && git push origin v1.0.0
+```
+
+The workflow can also be started by hand from the Actions tab (`workflow_dispatch`).
+
+The first push creates the package as **private**. To let anyone pull without logging in,
+open the package on GitHub (*Packages* → *lightspeed-tracker* → *Package settings*) and
+change its visibility to **Public**.
 
 ## Run a test now
 

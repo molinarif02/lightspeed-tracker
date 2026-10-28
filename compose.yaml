@@ -2,7 +2,8 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 services:
   lightspeed:
-    build: .
+    image: ghcr.io/molinarif02/lightspeed-tracker:latest
+    build: .                     # used by `docker compose build` / `up --build`
     container_name: lightspeed-tracker
     environment:
       - DISPLAY_TZ=Europe/Rome
