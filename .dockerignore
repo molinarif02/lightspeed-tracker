@@ -1,0 +1,7 @@
+.git
+.gitignore
+docs/
+data/
+*.md
+*.db
+__pycache__/

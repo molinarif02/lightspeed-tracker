@@ -1,0 +1,19 @@
+# Lightspeed Tracker
+# SPDX-License-Identifier: GPL-3.0-or-later
+services:
+  lightspeed:
+    build: .
+    container_name: lightspeed-tracker
+    environment:
+      - DISPLAY_TZ=Europe/Rome
+      - RUN_MINUTE=0              # minute past each hour to run the test
+      # - SPEEDTEST_SERVER_ID=     # pin a server (see `speedtest -L` inside the container)
+    volumes:
+      - lightspeed-data:/data      # named volume: inherits uid 1000 ownership from the image
+    ports:
+      - "8080:8080"
+    restart: unless-stopped
+
+volumes:
+  lightspeed-data:
+    name: lightspeed-data        # fixed name, no compose project prefix

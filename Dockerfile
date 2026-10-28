@@ -1,0 +1,28 @@
+# Lightspeed Tracker
+# SPDX-License-Identifier: GPL-3.0-or-later
+FROM python:3.13-slim
+
+LABEL org.opencontainers.image.title="Lightspeed Tracker" \
+      org.opencontainers.image.source="https://github.com/molinarif02/lightspeed-tracker" \
+      org.opencontainers.image.licenses="GPL-3.0-or-later"
+
+ARG OOKLA_VERSION=1.2.0
+
+RUN apt-get update \
+ && apt-get install -y --no-install-recommends ca-certificates curl tzdata \
+ && case "$(uname -m)" in \
+      aarch64) A=aarch64 ;; x86_64) A=x86_64 ;; armv7l) A=armhf ;; \
+      *) echo "unsupported arch $(uname -m)"; exit 1 ;; \
+    esac \
+ && curl -fsSL "https://install.speedtest.net/app/cli/ookla-speedtest-${OOKLA_VERSION}-linux-${A}.tgz" \
+    | tar -xz -C /usr/local/bin speedtest \
+ && apt-get purge -y curl && apt-get autoremove -y && rm -rf /var/lib/apt/lists/* \
+ && useradd -u 1000 -m -d /data app
+
+ENV HOME=/data PYTHONUNBUFFERED=1
+WORKDIR /app
+COPY app.py .
+USER app
+EXPOSE 8080
+HEALTHCHECK --interval=60s --timeout=5s CMD python -c "import urllib.request;urllib.request.urlopen('http://127.0.0.1:8080/healthz')"
+CMD ["python", "app.py"]
