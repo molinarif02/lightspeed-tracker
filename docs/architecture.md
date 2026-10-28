@@ -25,7 +25,8 @@ Everything is one Python process (`app.py`) using only the standard library:
   A failed test is logged and skipped, and nothing is stored for that hour.
 - **HTTP server**: `ThreadingHTTPServer`. Each request reads SQLite, builds the payload and
   renders the page. The data is embedded in the HTML as JSON, so the page makes no API calls.
-- **Front end**: one static HTML template with Chart.js loaded from a CDN. It follows the
+- **Front end**: one static HTML template with Chart.js loaded from a CDN. It has two charts
+  (the last 24 hours, and the last 7 days per day) and the 30-day table. It follows the
   light or dark system theme and reloads itself every 5 minutes.
 
 ## Units
@@ -67,13 +68,21 @@ the sum, rather than a stored average, makes the multi-day averages exact.
 
 Let *today* be the current date in `DISPLAY_TZ`, and *k days ago* mean *today − k*.
 
-### Last 7 days
+### Last 7 days, per day (chart)
 
-Covers the days from 0 to 6 days ago:
+There is one point per day, from 6 days ago up to today. Each day's values come from its
+`daily` row:
 
-- avg = Σ sums ÷ Σ counts, which is the true mean of every hourly result
-- min = the lowest daily minimum
-- max = the highest daily maximum
+- avg = sum ÷ n, the exact mean of that day's hourly results
+- min and max = that day's lowest and highest result
+
+Today is still in progress, so it holds fewer results. A day with no results is empty, and
+the line is drawn across the gap. On the chart, download and upload show the min–max range as
+a shaded band. Ping shows only its average line, since a band on the separate ms axis would
+overlap the Mbps bands. The tooltip shows avg, min, max and the test count for all three.
+
+The API also returns `last7`, the 7-day period as a single aggregate (Σ sums ÷ Σ counts, the
+lowest minimum and the highest maximum). The page doesn't display it.
 
 ### Last 30 days
 
@@ -87,7 +96,7 @@ The days from 0 to 29 days ago are split into rolling buckets:
 | 4 | 21–27 |
 | 5 | 28–29 (partial) |
 
-Each bucket that has data gets its own avg, min and max, computed as above. Then:
+Each bucket that has data gets its own avg (Σ sums ÷ Σ counts), min and max. Then:
 
 - avg = the mean of the bucket averages
 - min = the lowest bucket minimum

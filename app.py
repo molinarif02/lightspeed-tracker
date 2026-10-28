@@ -162,8 +162,24 @@ def history():
     return out
 
 
+def daily_last7():
+    """Per-day avg/min/max for today and the 6 previous days, oldest first."""
+    today = datetime.now(TZ).date()
+    with closing(conn()) as c:
+        rows = {r["day"]: r for r in c.execute("SELECT * FROM daily")}
+    out = []
+    for i in range(6, -1, -1):
+        d = today - timedelta(days=i)
+        r = rows.get(d.isoformat())
+        out.append({"day": d.isoformat(),
+                    "label": "Today" if i == 0 else d.strftime("%a %d"),
+                    "n": r["n"] if r else 0,
+                    **(_agg([r]) if r else {m: None for m in METRICS})})
+    return out
+
+
 def payload():
-    return {"tz": str(TZ), "history": history(), **stats()}
+    return {"tz": str(TZ), "history": history(), "days": daily_last7(), **stats()}
 
 
 PAGE = """<!doctype html>
@@ -178,16 +194,16 @@ body{margin:0;background:var(--bg);color:var(--fg);font:15px/1.4 system-ui,sans-
 main{max-width:960px;margin:0 auto;padding:16px}
 h1{font-size:20px;margin:4px 0 2px}.mut{color:var(--mut);font-size:13px}
 .card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:14px;margin-top:14px}
-.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:14px}
 table{width:100%;border-collapse:collapse;font-variant-numeric:tabular-nums}
 th,td{padding:6px 4px;text-align:right;border-bottom:1px solid var(--line)}
 th:first-child,td:first-child{text-align:left}th{color:var(--mut);font-weight:500}
-h2{font-size:15px;margin:0 0 8px}.chart{position:relative;height:300px}
+h2{font-size:15px;margin:0 0 8px}.chart{position:relative;height:300px}.chart.small{height:200px}
 </style></head><body><main>
 <h1>Lightspeed Tracker</h1><div class="mut" id="sub"></div>
 <div class="card"><h2>Last 24 hours</h2><div class="chart"><canvas id="c"></canvas></div></div>
-<div class="grid"><div class="card"><h2>Last 7 days</h2><div id="w"></div></div>
-<div class="card"><h2>Last 30 days <span class="mut">(from weekly values)</span></h2><div id="m"></div></div></div>
+<div class="card"><h2>Last 7 days, per day <span class="mut">(line: average, band: min–max, hover for details)</span></h2>
+<div class="chart small"><canvas id="d"></canvas></div><div class="mut" id="dnone"></div></div>
+<div class="card"><h2>Last 30 days <span class="mut">(from weekly values)</span></h2><div id="m"></div></div>
 </main>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 <script>
@@ -203,8 +219,11 @@ function table(s) {
     rows.map(([n,k]) => `<tr><td>${n}</td><td>${f(s[k].avg)}</td><td>${f(s[k].min)}</td><td>${f(s[k].max)}</td></tr>`).join('') +
     '</table>';
 }
-document.getElementById('w').innerHTML = table(D.last7);
 document.getElementById('m').innerHTML = table(D.last30);
+if (window.Chart) { const cs = getComputedStyle(document.documentElement);
+  Chart.defaults.color = cs.getPropertyValue('--mut').trim(); Chart.defaults.borderColor = cs.getPropertyValue('--line').trim(); }
+const scales = { y:{beginAtZero:true, title:{display:true,text:'Mbps'}},
+                 y1:{beginAtZero:true, position:'right', grid:{drawOnChartArea:false}, title:{display:true,text:'ms'}} };
 if (window.Chart && h.length) new Chart(document.getElementById('c'), {
   type: 'line',
   data: { labels: h.map(r => r.label), datasets: [
@@ -212,9 +231,37 @@ if (window.Chart && h.length) new Chart(document.getElementById('c'), {
     {label:'Upload Mbps', data:h.map(r=>r.up), borderColor:'#27ae60', backgroundColor:'#27ae60', yAxisID:'y', tension:.25},
     {label:'Ping ms', data:h.map(r=>r.ping), borderColor:'#f2994a', backgroundColor:'#f2994a', yAxisID:'y1', borderDash:[4,3], tension:.25}]},
   options: { maintainAspectRatio:false, interaction:{mode:'index', intersect:false},
-    plugins:{tooltip:{callbacks:{title:i=>h[i[0].dataIndex].full}}},
-    scales:{ y:{beginAtZero:true, title:{display:true,text:'Mbps'}},
-             y1:{beginAtZero:true, position:'right', grid:{drawOnChartArea:false}, title:{display:true,text:'ms'}} } }
+    plugins:{tooltip:{callbacks:{title:i=>h[i[0].dataIndex].full}}}, scales }
+});
+// Per-day chart: avg lines; shaded min-max bands for download/upload (ping min/max in tooltip).
+const dd = D.days;
+const val = (k, s) => dd.map(d => d[k] ? +d[k][s].toFixed(1) : null);
+function series(k, name, color, axis, dash, band = true) {
+  const avg = {grp:k, kind:'avg', label:name, data:val(k,'avg'), yAxisID:axis, borderColor:color, backgroundColor:color, borderDash:dash, tension:.25, spanGaps:true};
+  if (!band) return [avg];
+  return [
+    {grp:k, kind:'min', data:val(k,'min'), yAxisID:axis, borderWidth:0, pointRadius:0, pointHitRadius:0, fill:false, spanGaps:true},
+    {grp:k, kind:'max', data:val(k,'max'), yAxisID:axis, borderWidth:0, pointRadius:0, pointHitRadius:0, fill:'-1', backgroundColor:color+'2e', spanGaps:true},
+    avg];
+}
+if (!dd.some(d => d.n)) document.getElementById('dnone').textContent = 'No data yet.';
+if (window.Chart) new Chart(document.getElementById('d'), {
+  type: 'line',
+  data: { labels: dd.map(d => d.label), datasets: [
+    ...series('down', 'Download Mbps', '#2f80ed', 'y', []),
+    ...series('up', 'Upload Mbps', '#27ae60', 'y', []),
+    ...series('ping', 'Ping ms', '#f2994a', 'y1', [4,3], false)]},
+  options: { maintainAspectRatio:false, interaction:{mode:'index', intersect:false}, scales,
+    plugins:{
+      legend:{ labels:{ filter:(it, data) => data.datasets[it.datasetIndex].kind === 'avg' },
+        onClick:(e, it, legend) => { const ch = legend.chart, g = ch.data.datasets[it.datasetIndex].grp;
+          ch.data.datasets.forEach((ds, i) => { if (ds.grp === g) ch.setDatasetVisibility(i, !ch.isDatasetVisible(i)); });
+          ch.update(); } },
+      tooltip:{ filter: it => it.dataset.kind === 'avg',
+        callbacks:{
+          title: i => { const d = dd[i[0].dataIndex]; return `${d.day} (${d.n} test${d.n === 1 ? '' : 's'})`; },
+          label: it => { const d = dd[it.dataIndex][it.dataset.grp]; if (!d) return `${it.dataset.label}: no data`;
+            return `${it.dataset.label}: avg ${d.avg.toFixed(1)}, min ${d.min.toFixed(1)}, max ${d.max.toFixed(1)}`; } } } } }
 });
 </script></body></html>"""
 

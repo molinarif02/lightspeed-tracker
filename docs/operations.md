@@ -55,7 +55,7 @@ whatever the Compose project is called.
 ## Query the data
 
 ```bash
-curl -s http://<host>:8080/api | jq '.last7'
+curl -s http://<host>:8080/api | jq '.days'     # per-day values for the last 7 days
 ```
 
 Or open the database directly:

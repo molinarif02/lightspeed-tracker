@@ -5,8 +5,9 @@ It runs the official Ookla Speedtest CLI every hour, keeps a tiny SQLite databas
 and serves one page with:
 
 - a **24-hour chart** of download, upload and ping (timestamps in `Europe/Rome` by default)
-- **last 7 days**: average, minimum and maximum of all hourly results
-- **last 30 days**: average, minimum and maximum computed from weekly values
+- a smaller **last 7 days, per day** chart: the daily average as a line, with the daily min–max
+  range as a shaded band for download and upload. Hover a day to see avg, min, max and the number of tests.
+- a **last 30 days** table: average, minimum and maximum computed from weekly values
 
 Built for a Raspberry Pi 5 (arm64), and also runs on x86_64. The app uses only the Python
 standard library: no web framework, no external database, no scheduler daemon.
@@ -53,7 +54,8 @@ See [docs/configuration.md](docs/configuration.md) for details.
 
 - Raw hourly results are kept for **25 hours**, which is enough for the 24h chart.
 - One summary row per day (count, sum, min, max) is kept for **31 days**.
-- **7 days**: the exact average (total sum ÷ total count), plus the lowest minimum and highest maximum.
+- **7 days, per day**: for each of today and the 6 previous days, the exact daily average
+  (sum ÷ count) plus that day's minimum and maximum. Today is still in progress.
 - **30 days**: the period is split into rolling 7-day buckets going back from today (4 full
   weeks plus a partial 2-day bucket). The table shows the average of the weekly averages,
   the lowest weekly minimum and the highest weekly maximum.
