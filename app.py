@@ -38,7 +38,7 @@ from datetime import datetime, timedelta, timezone
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from zoneinfo import ZoneInfo
 
-TZ = ZoneInfo(os.environ.get("DISPLAY_TZ", "Europe/Rome"))
+TZ = ZoneInfo(os.environ.get("DISPLAY_TZ", "UTC"))
 DB = os.environ.get("DB_PATH", "/data/lightspeed.db")
 PORT = int(os.environ.get("PORT", "60884"))
 RUN_MINUTE = int(os.environ.get("RUN_MINUTE", "0"))

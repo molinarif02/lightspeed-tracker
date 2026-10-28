@@ -4,7 +4,7 @@ A minimal, self-hosted internet speed tracker that runs in a single container.
 It runs the official Ookla Speedtest CLI every hour, keeps a tiny SQLite database,
 and serves one page with:
 
-- a **24-hour chart** of download, upload and ping (timestamps in `Europe/Rome` by default)
+- a **24-hour chart** of download, upload and ping (timestamps in your configured time zone)
 - a smaller **last 7 days, per day** chart: the daily average as a line, with the daily min–max
   range as a shaded band for download and upload. Hover a day to see avg, min, max and the number of tests.
 - a **last 30 days** table: average, minimum and maximum computed from weekly values
@@ -53,9 +53,9 @@ All settings are environment variables in `compose.yaml`.
 
 | Variable | Default | Description |
 |---|---|---|
-| `DISPLAY_TZ` | `Europe/Rome` | IANA time zone used for chart labels and for day boundaries |
+| `DISPLAY_TZ` | `UTC` | IANA time zone used for chart labels and for day boundaries |
 | `RUN_MINUTE` | `0` | Minute past each hour when the test runs (0–59) |
-| `SPEEDTEST_SERVER_ID` | *(auto)* | Pin a specific Ookla server ID (`compose.yaml` pins `60884`) |
+| `SPEEDTEST_SERVER_ID` | *(auto)* | Pin a specific Ookla server ID |
 | `PORT` | `60884` | Port the web UI listens on inside the container |
 | `DB_PATH` | `/data/lightspeed.db` | SQLite database location |
 

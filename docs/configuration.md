@@ -2,13 +2,14 @@
 
 Lightspeed Tracker is configured only through environment variables. With Docker Compose,
 set them in the `environment:` section of `compose.yaml`, then run `docker compose up -d`
-to apply them.
+to apply them. `compose.yaml` ships with `DISPLAY_TZ`, `SPEEDTEST_SERVER_ID` and `PORT`
+commented out, so uncomment the ones you want to set.
 
 ## Variables
 
 ### `DISPLAY_TZ`
 
-Default: `Europe/Rome`
+Default: `UTC`
 
 An IANA time zone name, such as `Europe/Rome` or `UTC`. It controls:
 
@@ -30,7 +31,7 @@ On startup, a test runs immediately if the last stored result is more than 55 mi
 
 ### `SPEEDTEST_SERVER_ID`
 
-Default: empty, so Ookla picks a server automatically. The provided `compose.yaml` pins `60884`.
+Default: empty, so Ookla picks a server automatically.
 
 Pinning a server keeps results comparable over time. To list nearby servers:
 
@@ -38,7 +39,7 @@ Pinning a server keeps results comparable over time. To list nearby servers:
 docker exec lightspeed-tracker speedtest -L
 ```
 
-Then set it in `compose.yaml`, for example `SPEEDTEST_SERVER_ID=60884`. If the pinned server
+Then set it in `compose.yaml`, for example `SPEEDTEST_SERVER_ID=12345`. If the pinned server
 goes offline, tests fail and are logged until you change or remove it.
 
 ### `PORT`

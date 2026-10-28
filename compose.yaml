@@ -6,14 +6,15 @@ services:
     build: .                       # used by `docker compose build` / `up --build`
     container_name: lightspeed-tracker
     environment:
-      - DISPLAY_TZ=Europe/Rome
       - RUN_MINUTE=0               # minute past each hour to run the test
-      - SPEEDTEST_SERVER_ID=60884  # pinned Ookla server (list nearby: `speedtest -L` in the container)
-      - PORT=60884
+      # Uncomment and set as needed:
+      # - DISPLAY_TZ=Europe/Rome     # IANA zone for labels and day boundaries (default: UTC)
+      # - SPEEDTEST_SERVER_ID=12345  # pin an Ookla server; list nearby: `speedtest -L` in the container
+      # - PORT=60884                 # listening port (default: 60884); keep `ports:` below in sync
     volumes:
       - lightspeed-data:/data      # named volume: inherits uid 1000 ownership from the image
     ports:
-      - "60884:60884"              # LAN access; remove if you only want the tunnel
+      - "60884:60884"              # host:container; change both sides if you change PORT
     restart: unless-stopped
 
   # Optional Cloudflare Tunnel. Enabled with the "tunnel" profile:
