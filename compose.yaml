@@ -10,16 +10,16 @@ services:
       # Uncomment and set as needed:
       # - DISPLAY_TZ=Europe/Rome     # IANA zone for labels and day boundaries (default: UTC)
       # - SPEEDTEST_SERVER_ID=12345  # pin an Ookla server; list nearby: `speedtest -L` in the container
-      # - PORT=60884                 # listening port (default: 60884); keep `ports:` below in sync
+      # - PORT=8080                  # listening port (default: 8080); keep `ports:` below in sync
     volumes:
       - lightspeed-data:/data      # named volume: inherits uid 1000 ownership from the image
     ports:
-      - "60884:60884"              # host:container; change both sides if you change PORT
+      - "8080:8080"                # host:container; change both sides if you change PORT
     restart: unless-stopped
 
   # Optional Cloudflare Tunnel. Enabled with the "tunnel" profile:
   #   set TUNNEL_TOKEN and COMPOSE_PROFILES=tunnel in .env (see .env.example)
-  # In the Cloudflare dashboard, point the public hostname to: http://lightspeed:60884
+  # In the Cloudflare dashboard, point the public hostname to: http://lightspeed:8080
   cloudflared:
     image: cloudflare/cloudflared:latest
     container_name: lightspeed-cloudflared

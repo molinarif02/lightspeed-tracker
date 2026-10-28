@@ -5,7 +5,7 @@ A Cloudflare Tunnel makes the page reachable at a public hostname, such as
 outbound connection to Cloudflare, and Cloudflare forwards requests through it to the app.
 
 ```
-browser ──► Cloudflare (TLS, Access) ──► tunnel ──► cloudflared ──► lightspeed:60884
+browser ──► Cloudflare (TLS, Access) ──► tunnel ──► cloudflared ──► lightspeed:8080
 ```
 
 ## 1. Create the tunnel
@@ -21,7 +21,7 @@ browser ──► Cloudflare (TLS, Access) ──► tunnel ──► cloudflare
    | Subdomain / Domain | for example `speed` . `example.com` |
    | Path | *(empty)* |
    | Service type | `HTTP` |
-   | URL | `lightspeed:60884` |
+   | URL | `lightspeed:8080` |
 
    `lightspeed` is the Compose service name, which resolves on the Compose network that
    `cloudflared` shares with the app.
@@ -43,7 +43,7 @@ Keep the token secret. `.env` is already in `.gitignore`.
 ### Already running cloudflared on the host?
 
 Skip the sidecar: leave `COMPOSE_PROFILES` unset and point the public hostname at
-`http://localhost:60884` instead. The `ports:` mapping in `compose.yaml` publishes the app
+`http://localhost:8080` instead. The `ports:` mapping in `compose.yaml` publishes the app
 on the host.
 
 ### Tunnel only, no LAN port

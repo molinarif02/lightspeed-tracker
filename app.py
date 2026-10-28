@@ -40,7 +40,7 @@ from zoneinfo import ZoneInfo
 
 TZ = ZoneInfo(os.environ.get("DISPLAY_TZ", "UTC"))
 DB = os.environ.get("DB_PATH", "/data/lightspeed.db")
-PORT = int(os.environ.get("PORT", "60884"))
+PORT = int(os.environ.get("PORT", "8080"))
 RUN_MINUTE = int(os.environ.get("RUN_MINUTE", "0"))
 SERVER_ID = os.environ.get("SPEEDTEST_SERVER_ID", "").strip()
 METRICS = ("down", "up", "ping")

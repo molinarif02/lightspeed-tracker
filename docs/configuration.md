@@ -44,10 +44,10 @@ goes offline, tests fail and are logged until you change or remove it.
 
 ### `PORT`
 
-Default: `60884`
+Default: `8080`
 
 The port the HTTP server listens on inside the container. To expose a different host port,
-change the left side of the `ports:` mapping instead, for example `"9000:60884"`. If you change
+change the left side of the `ports:` mapping instead, for example `"9000:8080"`. If you change
 `PORT`, update the right side of the mapping and the tunnel's service URL to match.
 
 ### `PAGE_FILE`

@@ -15,7 +15,7 @@ Everything is one Python process (`app.py`) using only the standard library:
 │    daily    (rollups, 30d)                                        │
 │        ▲                                                          │
 │        │                                                          │
-│  HTTP server (:60884)  / (index.html)  /api  /healthz             │
+│  HTTP server (:8080)  / (index.html)  /api  /healthz              │
 │                                                                   │
 └───────────────────────────────────────────────────────────────────┘
 ```
