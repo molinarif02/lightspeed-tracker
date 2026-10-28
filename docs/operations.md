@@ -54,9 +54,10 @@ git tag v1.0.0 && git push origin v1.0.0
 
 The workflow can also be started by hand from the Actions tab (`workflow_dispatch`).
 
-The first push creates the package as **private**. To let anyone pull without logging in,
-open the package on GitHub (*Packages* → *lightspeed-tracker* → *Package settings*) and
-change its visibility to **Public**.
+The image is linked to this repository through the `org.opencontainers.image.source` label
+in the `Dockerfile`, so the package inherits the repository's visibility. The repository is
+public, so anyone can pull the image without logging in. For a fork kept private, change the
+visibility under *Packages* → *lightspeed-tracker* → *Package settings* → *Danger Zone*.
 
 ## Run a test now
 
