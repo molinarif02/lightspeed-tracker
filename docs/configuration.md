@@ -30,7 +30,7 @@ On startup, a test runs immediately if the last stored result is more than 55 mi
 
 ### `SPEEDTEST_SERVER_ID`
 
-Default: empty, so Ookla picks a server automatically.
+Default: empty, so Ookla picks a server automatically. The provided `compose.yaml` pins `60884`.
 
 Pinning a server keeps results comparable over time. To list nearby servers:
 
@@ -38,14 +38,29 @@ Pinning a server keeps results comparable over time. To list nearby servers:
 docker exec lightspeed-tracker speedtest -L
 ```
 
-Then set, for example, `SPEEDTEST_SERVER_ID=4302`.
+Then set it in `compose.yaml`, for example `SPEEDTEST_SERVER_ID=60884`. If the pinned server
+goes offline, tests fail and are logged until you change or remove it.
 
 ### `PORT`
 
-Default: `8080`
+Default: `60884`
 
 The port the HTTP server listens on inside the container. To expose a different host port,
-change the left side of the `ports:` mapping instead, for example `"9000:8080"`.
+change the left side of the `ports:` mapping instead, for example `"9000:60884"`. If you change
+`PORT`, update the right side of the mapping and the tunnel's service URL to match.
+
+### `PAGE_FILE`
+
+Default: `/app/index.html`
+
+The HTML template for the web UI. To customise the page without rebuilding, mount your own copy:
+
+```yaml
+    volumes:
+      - ./index.html:/app/index.html:ro
+```
+
+The template must keep the `__DATA__` placeholder, which the app replaces with the JSON payload.
 
 ### `DB_PATH`
 

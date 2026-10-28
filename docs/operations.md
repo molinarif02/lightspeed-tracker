@@ -90,7 +90,7 @@ whatever the Compose project is called.
 ## Query the data
 
 ```bash
-curl -s http://<host>:8080/api | jq '.days'     # per-day values for the last 7 days
+curl -s http://<host>:60884/api | jq '.days'     # per-day values for the last 7 days
 ```
 
 Or open the database directly:
@@ -103,11 +103,11 @@ docker run --rm -v lightspeed-data:/data keinos/sqlite3 \
 ## Reverse proxy
 
 The app serves plain HTTP and uses no absolute URLs, so it works behind any proxy at the root
-path. A minimal Caddy example:
+path. For Cloudflare Tunnel, see [cloudflare-tunnel.md](cloudflare-tunnel.md). A minimal Caddy example:
 
 ```
 speed.lan {
-    reverse_proxy lightspeed-tracker:8080
+    reverse_proxy lightspeed-tracker:60884
 }
 ```
 

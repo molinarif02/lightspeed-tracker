@@ -1,0 +1,83 @@
+<!doctype html>
+<!-- Lightspeed Tracker | SPDX-License-Identifier: GPL-3.0-or-later -->
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta http-equiv="refresh" content="300">
+<title>Lightspeed Tracker</title>
+<style>
+:root{--bg:#f6f7f9;--card:#fff;--fg:#1d2330;--mut:#6b7280;--line:#e5e7eb}
+@media (prefers-color-scheme:dark){:root{--bg:#111418;--card:#1a1f26;--fg:#e6e8eb;--mut:#9aa3af;--line:#2a313b}}
+body{margin:0;background:var(--bg);color:var(--fg);font:15px/1.4 system-ui,sans-serif}
+main{max-width:960px;margin:0 auto;padding:16px}
+h1{font-size:20px;margin:4px 0 2px}.mut{color:var(--mut);font-size:13px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:14px;margin-top:14px}
+table{width:100%;border-collapse:collapse;font-variant-numeric:tabular-nums}
+th,td{padding:6px 4px;text-align:right;border-bottom:1px solid var(--line)}
+th:first-child,td:first-child{text-align:left}th{color:var(--mut);font-weight:500}
+h2{font-size:15px;margin:0 0 8px}.chart{position:relative;height:300px}.chart.small{height:200px}
+</style></head><body><main>
+<h1>Lightspeed Tracker</h1><div class="mut" id="sub"></div>
+<div class="card"><h2>Last 24 hours</h2><div class="chart"><canvas id="c"></canvas></div></div>
+<div class="card"><h2>Last 7 days, per day <span class="mut">(line: average, band: min–max, hover for details)</span></h2>
+<div class="chart small"><canvas id="d"></canvas></div><div class="mut" id="dnone"></div></div>
+<div class="card"><h2>Last 30 days <span class="mut">(from weekly values)</span></h2><div id="m"></div></div>
+</main>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<script>
+const D = __DATA__;
+const h = D.history, last = h[h.length - 1];
+document.getElementById('sub').textContent = last
+  ? `Last test ${last.full} (${D.tz}): ${last.down} ↓ / ${last.up} ↑ Mbps, ${last.ping} ms`
+  : 'No results yet, the first test runs at startup.';
+function table(s) {
+  if (!s) return '<div class="mut">No data yet.</div>';
+  const f = v => v.toFixed(1), rows = [['Download (Mbps)','down'],['Upload (Mbps)','up'],['Ping (ms)','ping']];
+  return '<table><tr><th></th><th>Avg</th><th>Min</th><th>Max</th></tr>' +
+    rows.map(([n,k]) => `<tr><td>${n}</td><td>${f(s[k].avg)}</td><td>${f(s[k].min)}</td><td>${f(s[k].max)}</td></tr>`).join('') +
+    '</table>';
+}
+document.getElementById('m').innerHTML = table(D.last30);
+if (window.Chart) { const cs = getComputedStyle(document.documentElement);
+  Chart.defaults.color = cs.getPropertyValue('--mut').trim(); Chart.defaults.borderColor = cs.getPropertyValue('--line').trim(); }
+const scales = { y:{beginAtZero:true, title:{display:true,text:'Mbps'}},
+                 y1:{beginAtZero:true, position:'right', grid:{drawOnChartArea:false}, title:{display:true,text:'ms'}} };
+if (window.Chart && h.length) new Chart(document.getElementById('c'), {
+  type: 'line',
+  data: { labels: h.map(r => r.label), datasets: [
+    {label:'Download Mbps', data:h.map(r=>r.down), borderColor:'#2f80ed', backgroundColor:'#2f80ed', yAxisID:'y', tension:.25},
+    {label:'Upload Mbps', data:h.map(r=>r.up), borderColor:'#27ae60', backgroundColor:'#27ae60', yAxisID:'y', tension:.25},
+    {label:'Ping ms', data:h.map(r=>r.ping), borderColor:'#f2994a', backgroundColor:'#f2994a', yAxisID:'y1', borderDash:[4,3], tension:.25}]},
+  options: { maintainAspectRatio:false, interaction:{mode:'index', intersect:false},
+    plugins:{tooltip:{callbacks:{title:i=>h[i[0].dataIndex].full}}}, scales }
+});
+// Per-day chart: avg lines; shaded min-max bands for download/upload (ping min/max in tooltip).
+const dd = D.days;
+const val = (k, s) => dd.map(d => d[k] ? +d[k][s].toFixed(1) : null);
+function series(k, name, color, axis, dash, band = true) {
+  const avg = {grp:k, kind:'avg', label:name, data:val(k,'avg'), yAxisID:axis, borderColor:color, backgroundColor:color, borderDash:dash, tension:.25, spanGaps:true};
+  if (!band) return [avg];
+  return [
+    {grp:k, kind:'min', data:val(k,'min'), yAxisID:axis, borderWidth:0, pointRadius:0, pointHitRadius:0, fill:false, spanGaps:true},
+    {grp:k, kind:'max', data:val(k,'max'), yAxisID:axis, borderWidth:0, pointRadius:0, pointHitRadius:0, fill:'-1', backgroundColor:color+'2e', spanGaps:true},
+    avg];
+}
+if (!dd.some(d => d.n)) document.getElementById('dnone').textContent = 'No data yet.';
+if (window.Chart) new Chart(document.getElementById('d'), {
+  type: 'line',
+  data: { labels: dd.map(d => d.label), datasets: [
+    ...series('down', 'Download Mbps', '#2f80ed', 'y', []),
+    ...series('up', 'Upload Mbps', '#27ae60', 'y', []),
+    ...series('ping', 'Ping ms', '#f2994a', 'y1', [4,3], false)]},
+  options: { maintainAspectRatio:false, interaction:{mode:'index', intersect:false}, scales,
+    plugins:{
+      legend:{ labels:{ filter:(it, data) => data.datasets[it.datasetIndex].kind === 'avg' },
+        onClick:(e, it, legend) => { const ch = legend.chart, g = ch.data.datasets[it.datasetIndex].grp;
+          ch.data.datasets.forEach((ds, i) => { if (ds.grp === g) ch.setDatasetVisibility(i, !ch.isDatasetVisible(i)); });
+          ch.update(); } },
+      tooltip:{ filter: it => it.dataset.kind === 'avg',
+        callbacks:{
+          title: i => { const d = dd[i[0].dataIndex]; return `${d.day} (${d.n} test${d.n === 1 ? '' : 's'})`; },
+          label: it => { const d = dd[it.dataIndex][it.dataset.grp]; if (!d) return `${it.dataset.label}: no data`;
+            return `${it.dataset.label}: avg ${d.avg.toFixed(1)}, min ${d.min.toFixed(1)}, max ${d.max.toFixed(1)}`; } } } } }
+});
+</script></body></html>

@@ -15,7 +15,7 @@ Everything is one Python process (`app.py`) using only the standard library:
 │    daily    (rollups, 31d)                                        │
 │        ▲                                                          │
 │        │                                                          │
-│  HTTP server (:8080)  /  /api  /healthz                           │
+│  HTTP server (:60884)  / (index.html)  /api  /healthz             │
 │                                                                   │
 └───────────────────────────────────────────────────────────────────┘
 ```
@@ -25,7 +25,8 @@ Everything is one Python process (`app.py`) using only the standard library:
   A failed test is logged and skipped, and nothing is stored for that hour.
 - **HTTP server**: `ThreadingHTTPServer`. Each request reads SQLite, builds the payload and
   renders the page. The data is embedded in the HTML as JSON, so the page makes no API calls.
-- **Front end**: one static HTML template with Chart.js loaded from a CDN. It has two charts
+- **Front end**: `index.html`, a static template loaded once at startup, with Chart.js from a CDN.
+  The app replaces its `__DATA__` placeholder with the JSON payload. It has two charts
   (the last 24 hours, and the last 7 days per day) and the 30-day table. It follows the
   light or dark system theme and reloads itself every 5 minutes.
 
@@ -116,7 +117,9 @@ This keeps the definition simple. If you would rather drop it, limit the range i
 ## Security notes
 
 - The container runs as an unprivileged user (uid 1000).
-- There is no authentication. Expose it only on a trusted LAN, or put it behind a reverse
-  proxy with authentication.
+- There is no authentication. Expose it only on a trusted LAN, or behind something that adds
+  authentication, such as Cloudflare Access when publishing through a tunnel.
+- Responses carry `Cache-Control: no-store`, `X-Content-Type-Options: nosniff` and
+  `Referrer-Policy: no-referrer`.
 - The only outbound traffic is the speed test itself, plus the CDN request for Chart.js
   made by the viewer's browser.

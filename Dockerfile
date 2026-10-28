@@ -19,10 +19,10 @@ RUN apt-get update \
  && apt-get purge -y curl && apt-get autoremove -y && rm -rf /var/lib/apt/lists/* \
  && useradd -u 1000 -m -d /data app
 
-ENV HOME=/data PYTHONUNBUFFERED=1
+ENV HOME=/data PYTHONUNBUFFERED=1 PORT=60884
 WORKDIR /app
-COPY app.py .
+COPY app.py index.html ./
 USER app
-EXPOSE 8080
-HEALTHCHECK --interval=60s --timeout=5s CMD python -c "import urllib.request;urllib.request.urlopen('http://127.0.0.1:8080/healthz')"
+EXPOSE 60884
+HEALTHCHECK --interval=60s --timeout=5s CMD python -c "import os,urllib.request;urllib.request.urlopen('http://127.0.0.1:%s/healthz' % os.environ.get('PORT','60884'))"
 CMD ["python", "app.py"]

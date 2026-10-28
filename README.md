@@ -25,7 +25,7 @@ docker compose pull
 docker compose up -d
 ```
 
-Open `http://<host>:8080`. The first test runs right after startup, then every hour at `:00`.
+Open `http://<host>:60884`. The first test runs right after startup, then every hour at `:00`.
 
 To build the image locally instead:
 
@@ -55,8 +55,8 @@ All settings are environment variables in `compose.yaml`.
 |---|---|---|
 | `DISPLAY_TZ` | `Europe/Rome` | IANA time zone used for chart labels and for day boundaries |
 | `RUN_MINUTE` | `0` | Minute past each hour when the test runs (0–59) |
-| `SPEEDTEST_SERVER_ID` | *(auto)* | Pin a specific Ookla server ID |
-| `PORT` | `8080` | Port the web UI listens on inside the container |
+| `SPEEDTEST_SERVER_ID` | *(auto)* | Pin a specific Ookla server ID (`compose.yaml` pins `60884`) |
+| `PORT` | `60884` | Port the web UI listens on inside the container |
 | `DB_PATH` | `/data/lightspeed.db` | SQLite database location |
 
 See [docs/configuration.md](docs/configuration.md) for details.
@@ -65,7 +65,7 @@ See [docs/configuration.md](docs/configuration.md) for details.
 
 | Path | Description |
 |---|---|
-| `/` | Web UI |
+| `/`, `/index.html` | Web UI (rendered from `index.html`) |
 | `/api` | The same data as JSON |
 | `/healthz` | Liveness check, returns `ok` |
 
@@ -81,11 +81,25 @@ See [docs/configuration.md](docs/configuration.md) for details.
 
 The database never grows past about 60 rows. See [docs/architecture.md](docs/architecture.md).
 
+## Publishing with Cloudflare Tunnel
+
+`compose.yaml` includes an optional `cloudflared` sidecar, enabled by a Compose profile:
+
+```bash
+cp .env.example .env      # set TUNNEL_TOKEN
+docker compose up -d      # COMPOSE_PROFILES=tunnel in .env starts cloudflared too
+```
+
+In the Cloudflare dashboard, point the tunnel's public hostname at `http://lightspeed:60884`.
+The page has no login of its own, so protect the hostname with Cloudflare Access.
+See [docs/cloudflare-tunnel.md](docs/cloudflare-tunnel.md).
+
 ## Documentation
 
 - [Configuration](docs/configuration.md)
 - [Architecture and data model](docs/architecture.md)
 - [Operations: updates, backup, troubleshooting](docs/operations.md)
+- [Publishing with Cloudflare Tunnel](docs/cloudflare-tunnel.md)
 
 ## Third-party software
 
