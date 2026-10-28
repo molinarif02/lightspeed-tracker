@@ -1,3 +1,5 @@
+<img src="static/favicon.svg" alt="" width="72" align="right">
+
 # Lightspeed Tracker
 
 A minimal, self-hosted internet speed tracker that runs in a single container.
@@ -68,6 +70,7 @@ See [docs/configuration.md](docs/configuration.md) for details.
 | `/`, `/index.html` | Web UI (rendered from `index.html`) |
 | `/api` | The same data as JSON |
 | `/healthz` | Liveness check, returns `ok` |
+| `/favicon.svg`, `/favicon.ico`, `/apple-touch-icon.png` | Icons, cached for 7 days |
 
 ## How the stats work
 

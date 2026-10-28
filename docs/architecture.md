@@ -26,7 +26,9 @@ Everything is one Python process (`app.py`) using only the standard library:
 - **HTTP server**: `ThreadingHTTPServer`. Each request reads SQLite, builds the payload and
   renders the page. The data is embedded in the HTML as JSON, so the page makes no API calls.
 - **Front end**: `index.html`, a static template loaded once at startup, with Chart.js from a CDN.
-  The app replaces its `__DATA__` placeholder with the JSON payload. It has two charts
+  The app replaces its `__DATA__` placeholder with the JSON payload.
+- **Icons**: `static/` holds the favicon (SVG, plus ICO and Apple touch icon fallbacks).
+  The files are loaded into memory at startup, and only those exact paths are served. It has two charts
   (the last 24 hours, and the last 7 days per day) and the 30-day table. It follows the
   light or dark system theme and reloads itself every 5 minutes.
 

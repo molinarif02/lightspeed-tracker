@@ -4,6 +4,10 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta http-equiv="refresh" content="300">
 <title>Lightspeed Tracker</title>
+<link rel="icon" href="favicon.ico" sizes="48x48">
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<meta name="theme-color" content="#0b1026">
 <style>
 :root{--bg:#f6f7f9;--card:#fff;--fg:#1d2330;--mut:#6b7280;--line:#e5e7eb}
 @media (prefers-color-scheme:dark){:root{--bg:#111418;--card:#1a1f26;--fg:#e6e8eb;--mut:#9aa3af;--line:#2a313b}}
@@ -16,7 +20,7 @@ th,td{padding:6px 4px;text-align:right;border-bottom:1px solid var(--line)}
 th:first-child,td:first-child{text-align:left}th{color:var(--mut);font-weight:500}
 h2{font-size:15px;margin:0 0 8px}.chart{position:relative;height:300px}.chart.small{height:200px}
 </style></head><body><main>
-<h1>Lightspeed Tracker</h1><div class="mut" id="sub"></div>
+<h1><img src="favicon.svg" alt="" width="22" height="22" style="vertical-align:-4px;margin-right:8px">Lightspeed Tracker</h1><div class="mut" id="sub"></div>
 <div class="card"><h2>Last 24 hours</h2><div class="chart"><canvas id="c"></canvas></div></div>
 <div class="card"><h2>Last 7 days, per day <span class="mut">(line: average, band: min–max, hover for details)</span></h2>
 <div class="chart small"><canvas id="d"></canvas></div><div class="mut" id="dnone"></div></div>

@@ -22,6 +22,7 @@ RUN apt-get update \
 ENV HOME=/data PYTHONUNBUFFERED=1 PORT=8080
 WORKDIR /app
 COPY app.py index.html ./
+COPY static/ ./static/
 USER app
 EXPOSE 8080
 HEALTHCHECK --interval=60s --timeout=5s CMD python -c "import os,urllib.request;urllib.request.urlopen('http://127.0.0.1:%s/healthz' % os.environ.get('PORT','8080'))"

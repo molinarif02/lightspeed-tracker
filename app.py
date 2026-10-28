@@ -201,15 +201,26 @@ PAGE_FILE = os.environ.get("PAGE_FILE", os.path.join(os.path.dirname(os.path.abs
 with open(PAGE_FILE, encoding="utf-8") as f:
     PAGE = f.read()
 
+# Icons are loaded into memory once; only these names are ever served (no path traversal).
+STATIC_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "static")
+STATIC = {}
+for name, ctype in (("favicon.svg", "image/svg+xml"), ("favicon.ico", "image/x-icon"),
+                    ("apple-touch-icon.png", "image/png")):
+    try:
+        with open(os.path.join(STATIC_DIR, name), "rb") as f:
+            STATIC["/" + name] = (f.read(), ctype)
+    except OSError:
+        pass
+
 
 class Handler(BaseHTTPRequestHandler):
-    def _send(self, code, body, ctype):
-        b = body.encode()
+    def _send(self, code, body, ctype, cache="no-store"):
+        b = body if isinstance(body, bytes) else body.encode()
         head = self.command == "HEAD"
         self.send_response(code)
         self.send_header("Content-Type", ctype)
         self.send_header("Content-Length", str(len(b)))
-        self.send_header("Cache-Control", "no-store")
+        self.send_header("Cache-Control", cache)
         self.send_header("X-Content-Type-Options", "nosniff")
         self.send_header("Referrer-Policy", "no-referrer")
         self.end_headers()
@@ -225,6 +236,9 @@ class Handler(BaseHTTPRequestHandler):
             self._send(200, json.dumps(payload(), indent=2), "application/json")
         elif path == "/healthz":
             self._send(200, "ok", "text/plain")
+        elif path in STATIC:
+            body, ctype = STATIC[path]
+            self._send(200, body, ctype, cache="public, max-age=604800")
         else:
             self._send(404, "not found", "text/plain")
 

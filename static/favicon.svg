@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+<!-- Lightspeed Tracker favicon: the jump to lightspeed. SPDX-License-Identifier: GPL-3.0-or-later -->
+<defs>
+<linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#0b1026"/><stop offset="1" stop-color="#1e3a8a"/></linearGradient>
+<radialGradient id="core"><stop offset="0" stop-color="#ffffff"/><stop offset=".4" stop-color="#bae6fd" stop-opacity=".85"/><stop offset="1" stop-color="#2f80ed" stop-opacity="0"/></radialGradient>
+<clipPath id="tile"><rect width="64" height="64" rx="14"/></clipPath>
+</defs>
+<g clip-path="url(#tile)">
+<rect width="64" height="64" fill="url(#bg)"/>
+<polygon points="38.9,33.2 77.4,40.0 77.9,35.2 39.0,32.5" fill="#ffffff" fill-opacity="1"/>
+<polygon points="40.6,37.1 64.3,52.1 65.9,49.3 40.8,36.7" fill="#7dd3fc" fill-opacity="0.85"/>
+<polygon points="36.7,38.5 57.4,68.0 60.7,65.4 37.2,38.1" fill="#a5b4fc" fill-opacity="0.9"/>
+<polygon points="35.0,43.6 39.7,65.1 42.4,64.4 35.4,43.5" fill="#ffffff" fill-opacity="0.7"/>
+<polygon points="30.6,40.9 24.7,73.4 29.1,74.0 31.2,41.0" fill="#7dd3fc" fill-opacity="0.95"/>
+<polygon points="26.4,41.4 12.8,62.5 15.8,64.2 26.8,41.7" fill="#bae6fd" fill-opacity="0.8"/>
+<polygon points="26.3,36.0 -5.7,58.4 -2.8,62.2 26.7,36.6" fill="#ffffff" fill-opacity="1"/>
+<polygon points="22.3,34.4 -5.0,40.6 -4.2,43.7 22.4,34.9" fill="#7dd3fc" fill-opacity="0.85"/>
+<polygon points="24.1,30.7 -11.4,24.6 -11.9,28.7 24.0,31.3" fill="#a5b4fc" fill-opacity="0.9"/>
+<polygon points="21.7,25.9 3.1,14.0 1.7,16.5 21.5,26.3" fill="#ffffff" fill-opacity="0.7"/>
+<polygon points="26.7,24.7 7.9,-2.5 4.4,0.3 26.2,25.1" fill="#7dd3fc" fill-opacity="0.95"/>
+<polygon points="29.3,21.3 24.0,-3.1 20.7,-2.2 28.8,21.5" fill="#bae6fd" fill-opacity="0.8"/>
+<polygon points="33.2,25.1 40.0,-13.4 35.2,-13.9 32.5,25.0" fill="#ffffff" fill-opacity="1"/>
+<polygon points="37.1,23.4 52.1,-0.3 49.3,-1.9 36.7,23.2" fill="#7dd3fc" fill-opacity="0.85"/>
+<polygon points="38.5,27.3 68.0,6.6 65.4,3.3 38.1,26.8" fill="#a5b4fc" fill-opacity="0.9"/>
+<polygon points="43.6,29.0 65.1,24.3 64.4,21.6 43.5,28.6" fill="#ffffff" fill-opacity="0.7"/>
+<circle cx="32" cy="32" r="12" fill="url(#core)"/>
+<circle cx="32" cy="32" r="3.6" fill="#ffffff"/>
+</g>
+</svg>
