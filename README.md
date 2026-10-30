@@ -3,7 +3,8 @@
 # Lightspeed Tracker
 
 A minimal, self-hosted internet speed tracker that runs in a single container.
-It runs the official Ookla Speedtest CLI every hour, keeps a tiny SQLite database,
+Every hour it runs a short burst of Ookla Speedtest CLI tests and keeps the best result,
+stores it in a tiny SQLite database,
 and serves one page with:
 
 - a **24-hour chart** of download, upload and ping (timestamps in your configured time zone)
@@ -27,7 +28,7 @@ docker compose pull
 docker compose up -d
 ```
 
-Open `http://<host>:8080`. The first test runs right after startup, then every hour at `:00`.
+Open `http://<host>:8080`. The first result appears about 4 minutes after startup, then every hour at `:00`.
 
 To build the image locally instead:
 
@@ -56,7 +57,8 @@ All settings are environment variables in `compose.yaml`.
 | Variable | Default | Description |
 |---|---|---|
 | `DISPLAY_TZ` | `UTC` | IANA time zone used for chart labels and for day boundaries |
-| `RUN_MINUTE` | `0` | Minute past each hour when the test runs (0–59) |
+| `RUN_MINUTE` | `0` | Minute past each hour when the result is taken (0–59) |
+| `PRE_TESTS` | `3` | Extra runs, one per minute, before each scheduled run (`0` = single run) |
 | `SPEEDTEST_SERVER_ID` | *(auto)* | Pin a specific Ookla server ID |
 | `PORT` | `8080` | Port the web UI listens on inside the container |
 | `DB_PATH` | `/data/lightspeed.db` | SQLite database location |
@@ -74,6 +76,10 @@ See [docs/configuration.md](docs/configuration.md) for details.
 
 ## How the stats work
 
+- **Each hour is a burst of runs**: with the defaults, tests run at `:57`, `:58`, `:59` and `:00`.
+  The hourly result takes the **best value of each metric** across those runs (highest download,
+  highest upload, lowest ping), which may come from different runs. It's stamped at `:00`,
+  and the per-run samples are deleted once it's saved. Failed runs are ignored.
 - Raw hourly results are kept for **25 hours**, which is enough for the 24h chart.
 - One summary row per day (count, sum, min, max) is kept for **30 days**: today and the 29 previous days.
 - Anything older is deleted every hour (and at startup), even when tests fail, and the

@@ -20,9 +20,12 @@ Everything is one Python process (`app.py`) using only the standard library:
 └───────────────────────────────────────────────────────────────────┘
 ```
 
-- **Scheduler thread**: sleeps until the next `RUN_MINUTE` (computed in UTC), runs
-  `speedtest --accept-license --accept-gdpr -f json`, parses the result and stores it.
-  A failed test is logged and skipped, and nothing is stored for that hour.
+- **Scheduler thread**: each hour it runs a burst of `PRE_TESTS + 1` tests, one per minute,
+  ending at `RUN_MINUTE` (computed in UTC). Each run calls
+  `speedtest --accept-license --accept-gdpr -f json` and stores the parsed values in `samples`.
+  After the last run, the best of each metric (highest download, highest upload, lowest ping)
+  becomes the hourly result, stamped at the scheduled time, and that burst's samples are
+  deleted. Failed runs are skipped; if every run fails, nothing is stored for that hour.
 - **HTTP server**: `ThreadingHTTPServer`. Each request reads SQLite, builds the payload and
   renders the page. The data is embedded in the HTML as JSON, so the page makes no API calls.
 - **Front end**: `index.html`, a static template loaded once at startup, with Chart.js from a CDN.
@@ -43,6 +46,22 @@ Mbps = bandwidth × 8 ÷ 1 000 000
 Ping is the CLI's `ping.latency`, in milliseconds.
 
 ## Tables
+
+### `samples` (temporary)
+
+| Column | Type | Notes |
+|---|---|---|
+| `target` | INTEGER | Scheduled time of the burst (unix, UTC) |
+| `ts` | INTEGER | When the run finished |
+| `down`, `up`, `ping` | REAL | Mbps, Mbps, ms |
+
+It holds at most `PRE_TESTS + 1` rows, and only while a burst is running. Rows are deleted
+as soon as the hourly result is saved, even when the burst fails. Any leftovers from a
+burst interrupted by a restart are cleared at startup.
+
+Picking the best of each metric independently means one hourly result can combine values
+from different runs, for example the download from one run and the ping from another. It
+measures what the line can do at its best within those minutes, not a single run.
 
 ### `results`
 
@@ -118,6 +137,7 @@ the file stays small on disk.
 
 | Data | Kept for | Maximum rows |
 |---|---|---|
+| Burst samples | until the hour's result is saved | `PRE_TESTS + 1` |
 | Raw results | 25 h | about 25 |
 | Daily rollups | 30 days (today + 29 previous) | 30 |
 

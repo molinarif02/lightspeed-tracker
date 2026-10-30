@@ -6,7 +6,8 @@ services:
     build: .                       # used by `docker compose build` / `up --build`
     container_name: lightspeed-tracker
     environment:
-      - RUN_MINUTE=0               # minute past each hour to run the test
+      - RUN_MINUTE=0               # minute past each hour the result is taken
+      - PRE_TESTS=3                # extra runs, 1/min, before it; best of all is kept (0 = single run)
       # Uncomment and set as needed:
       # - DISPLAY_TZ=Europe/Rome     # IANA zone for labels and day boundaries (default: UTC)
       # - SPEEDTEST_SERVER_ID=12345  # pin an Ookla server; list nearby: `speedtest -L` in the container

@@ -23,11 +23,30 @@ boundaries they were computed with.
 
 Default: `0`
 
-The minute past each hour when the test runs. The schedule is computed in UTC, so DST
-changes never skip or repeat a run. Picking a minute other than `0` (for example `7`)
+The minute past each hour when the hourly result is taken: the last run of each burst
+happens at this minute, and the result is stamped with it. The schedule is computed in UTC,
+so DST changes never skip or repeat a run. Picking a minute other than `0` (for example `7`)
 avoids the busy top of the hour on Ookla's servers.
 
-On startup, a test runs immediately if the last stored result is more than 55 minutes old.
+On startup, if the last stored result is more than 55 minutes old, a burst starts at the
+next full minute, so the first result appears about 4 minutes later. That's skipped when
+the next scheduled burst is less than about 10 minutes away.
+
+### `PRE_TESTS`
+
+Default: `3`
+
+The number of extra runs before each scheduled run, one per minute. With the default and
+`RUN_MINUTE=0`, tests run at `:57`, `:58`, `:59` and `:00`. The hourly result is the best
+value of each metric across all successful runs: highest download, highest upload and
+lowest ping. Set it to `0` for a single run per hour.
+
+If a run takes longer than a minute, the next one starts as soon as it finishes instead of
+overlapping. If the container starts during a burst window, the missed runs happen right away.
+
+Each run transfers real data in both directions. On a gigabit line, a run can move around
+1–1.5 GB, so the default of 4 runs per hour adds up to several TB a month. Lower
+`PRE_TESTS` if your connection has a data cap.
 
 ### `SPEEDTEST_SERVER_ID`
 

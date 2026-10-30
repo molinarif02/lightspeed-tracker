@@ -12,10 +12,14 @@ docker compose logs -f
 
 To build locally instead of pulling, use `docker compose up -d --build`.
 
-A successful test logs a line like this:
+Each hour's burst logs one line per run, then the saved result:
 
 ```
-2026-10-28 22:00:41,512 INFO down 912.4 Mbps, up 241.7 Mbps, ping 9.8 ms
+2026-10-30 12:57:24,103 INFO run 1/4: down 897.1 Mbps, up 238.9 Mbps, ping 10.4 ms
+2026-10-30 12:58:23,877 INFO run 2/4: down 912.4 Mbps, up 241.7 Mbps, ping 9.8 ms
+2026-10-30 12:59:24,210 INFO run 3/4: down 905.0 Mbps, up 243.0 Mbps, ping 10.1 ms
+2026-10-30 13:00:23,964 INFO run 4/4: down 889.6 Mbps, up 240.2 Mbps, ping 11.2 ms
+2026-10-30 13:00:23,970 INFO result (best of 4): down 912.4 Mbps, up 243.0 Mbps, ping 9.8 ms
 ```
 
 ## Update
@@ -66,7 +70,8 @@ docker exec lightspeed-tracker speedtest --accept-license --accept-gdpr
 ```
 
 This only prints the result and does not store it. To store an extra result, restart the
-container more than 55 minutes after the last test, or just wait for the next hour.
+container more than 55 minutes after the last result (a burst then starts at the next full
+minute), or just wait for the next hour.
 
 ## Backup and restore
 
@@ -115,7 +120,7 @@ speed.lan {
 
 | Symptom | Cause and fix |
 |---|---|
-| `speedtest failed: ... Cannot read from socket` | No connectivity, or the server is unavailable. Pin another server with `SPEEDTEST_SERVER_ID`. |
+| `run n/4 failed: ... Cannot read from socket` | No connectivity, or the server is unavailable. Pin another server with `SPEEDTEST_SERVER_ID`. |
 | `sqlite3.OperationalError: unable to open database file` | `/data` isn't writable by uid 1000. See the storage section in [configuration](configuration.md#storage). |
 | The chart is empty but the tables show data | The browser can't reach `cdn.jsdelivr.net`. The tables still work. |
 | Image build fails at the `curl` step | The Ookla download URL or version changed. Check the [Ookla CLI page](https://www.speedtest.net/apps/cli) and set `OOKLA_VERSION`. |

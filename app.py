@@ -19,7 +19,8 @@
 """Lightspeed Tracker: minimal hourly Ookla speedtest tracker. Stdlib only.
 
 Storage policy:
-  - results: raw hourly results, kept for 25h (feeds the 24h chart)
+  - samples: per-run results of the burst in progress (temporary, deleted after each hour)
+  - results: one result per hour (best of the burst), kept for 25h (feeds the 24h chart)
   - daily:   per-day rollups (count, sum, min, max), kept for 30 days
              (feeds the 7-day and 30-day stats; avg is exact via sum/count)
 
@@ -46,6 +47,8 @@ SERVER_ID = os.environ.get("SPEEDTEST_SERVER_ID", "").strip()
 METRICS = ("down", "up", "ping")
 KEEP_DAYS = 30        # daily rollups: today + 29 previous days (exactly what the stats use)
 KEEP_RAW_HOURS = 25   # raw results: enough for the 24h chart
+PRE_TESTS = max(0, int(os.environ.get("PRE_TESTS", "3")))  # extra runs before each scheduled one
+BURST_INTERVAL = 60   # seconds between runs in a burst
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
 log = logging.getLogger("lightspeed")
@@ -64,6 +67,9 @@ def init_db():
         c.execute("CREATE TABLE IF NOT EXISTS results "
                   "(ts INTEGER PRIMARY KEY, down REAL, up REAL, ping REAL)")
         c.execute(f"CREATE TABLE IF NOT EXISTS daily (day TEXT PRIMARY KEY, n INTEGER, {cols})")
+        # Temporary per-run samples of the burst in progress; emptied once the result is saved.
+        c.execute("CREATE TABLE IF NOT EXISTS samples "
+                  "(target INTEGER, ts INTEGER, down REAL, up REAL, ping REAL)")
 
 
 def run_speedtest():
@@ -109,30 +115,71 @@ def prune():
         log.info("pruned %d raw result(s), %d day(s) older than %s", r, d, oldest_day)
 
 
-def do_test():
+def run_burst(target):
+    """Run PRE_TESTS + 1 tests, one per BURST_INTERVAL, ending at `target` (unix time).
+
+    Every successful run is stored in `samples`. The saved result takes the best of each
+    metric independently (highest download, highest upload, lowest ping), stamped at
+    `target`; then this burst's samples are deleted. Slots already in the past are run
+    immediately, and a run that overruns its slot just delays the next one.
+    """
+    slots = [target - i * BURST_INTERVAL for i in range(PRE_TESTS, -1, -1)]
     try:
-        res = run_speedtest()
-        record(int(time.time()), res)
-        log.info("down %.1f Mbps, up %.1f Mbps, ping %.1f ms", res["down"], res["up"], res["ping"])
-    except Exception as e:
-        log.error("speedtest failed: %s", e)
+        for n, slot in enumerate(slots, 1):
+            wait = slot - time.time()
+            if wait > 0:
+                time.sleep(wait)
+            try:
+                res = run_speedtest()
+            except Exception as e:
+                log.error("run %d/%d failed: %s", n, len(slots), e)
+                continue
+            with lock, closing(conn()) as c, c:
+                c.execute("INSERT INTO samples VALUES (?,?,?,?,?)",
+                          (target, int(time.time()), res["down"], res["up"], res["ping"]))
+            log.info("run %d/%d: down %.1f Mbps, up %.1f Mbps, ping %.1f ms",
+                     n, len(slots), res["down"], res["up"], res["ping"])
+
+        with closing(conn()) as c:
+            row = c.execute("SELECT COUNT(*) n, MAX(down) down, MAX(up) up, MIN(ping) ping "
+                            "FROM samples WHERE target = ?", (target,)).fetchone()
+        if not row["n"]:
+            log.error("all %d runs failed, nothing recorded", len(slots))
+            return
+        best = {m: row[m] for m in METRICS}
+        record(target, best)
+        log.info("result (best of %d): down %.1f Mbps, up %.1f Mbps, ping %.1f ms",
+                 row["n"], best["down"], best["up"], best["ping"])
     finally:
+        with lock, closing(conn()) as c, c:
+            c.execute("DELETE FROM samples WHERE target = ?", (target,))
         prune()
 
 
+def next_target(after):
+    """Next scheduled test time (UTC, minute RUN_MINUTE) strictly after `after`."""
+    t = after.replace(minute=RUN_MINUTE, second=0, microsecond=0)
+    return t if t > after else t + timedelta(hours=1)
+
+
 def scheduler():
+    with lock, closing(conn()) as c, c:   # leftovers from a burst interrupted by a restart
+        c.execute("DELETE FROM samples")
     prune()
+    lead = timedelta(seconds=PRE_TESTS * BURST_INTERVAL)
     with closing(conn()) as c:
         last = c.execute("SELECT MAX(ts) FROM results").fetchone()[0] or 0
-    if time.time() - last > 55 * 60:
-        do_test()
+    now = datetime.now(timezone.utc)
+    # First result soon after startup, unless the next scheduled burst is about to start anyway.
+    if time.time() - last > 55 * 60 and next_target(now) - lead - now > lead + timedelta(minutes=5):
+        start = now.replace(second=0, microsecond=0) + timedelta(minutes=1)
+        run_burst(int((start + lead).timestamp()))
     while True:
-        now = datetime.now(timezone.utc)  # schedule in UTC: no DST surprises
-        nxt = now.replace(minute=RUN_MINUTE, second=0, microsecond=0)
-        if nxt <= now:
-            nxt += timedelta(hours=1)
-        time.sleep((nxt - now).total_seconds())
-        do_test()
+        # Schedule in UTC: no DST surprises. If the burst should already have started
+        # (container started a minute before the hour), its missed slots run right away.
+        target = next_target(datetime.now(timezone.utc))
+        time.sleep(max(0, (target - lead - datetime.now(timezone.utc)).total_seconds()))
+        run_burst(int(target.timestamp()))
 
 
 # ---------- read side ----------
